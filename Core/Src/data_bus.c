@@ -9,7 +9,6 @@
 #include <string.h>
 #include "sr_74hc595.h"
 #include "ui.h"
-#include "cmsis_os.h"
 #include "main.h"
 
 extern TIM_HandleTypeDef htim2;

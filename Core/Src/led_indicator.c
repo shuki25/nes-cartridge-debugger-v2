@@ -85,7 +85,7 @@ uint32_t led_ms_to_timer_ticks(uint32_t ms) {
  * @return 1 if time has expired, 0 if not
  */
 uint8_t led_time_expired(led_t *led) {
-    uint16_t current_time = __HAL_TIM_GET_COUNTER(led->htim_delay);
+    uint32_t current_time = __HAL_TIM_GET_COUNTER(led->htim_delay);
     if (led->start_time <= led->end_time) {
         // Normal case: no rollover
         if (current_time >= led->end_time) {

@@ -24,7 +24,6 @@
 /* USER CODE BEGIN INCLUDE */
 #include <string.h>
 #include "ring_buffer.h"
-#include "cmsis_os.h"
 /* USER CODE END INCLUDE */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -276,7 +275,7 @@ static int8_t CDC_Receive_FS(uint8_t* Buf, uint32_t *Len)
             rx_value = Buf[i];
             ring_buffer_status = ring_buffer_enqueue(&rx_buffer, (void*) &rx_value);
             if (!ring_buffer_status) {
-                osDelay(1);
+                HAL_Delay(1);
                 counter++;
             }
             if (counter == 10) {

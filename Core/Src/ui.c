@@ -6,7 +6,6 @@
  */
 
 #include "ui.h"
-#include "cmsis_os.h"
 #include "ssd1306.h"
 
 /*-----------------------------------------------------------------------------
@@ -19,7 +18,7 @@
  * Return: None
  *---------------------------------------------------------------------------*/
 void echo_terminal(uint8_t *rx_value) {
-    osDelay(1);
+    HAL_Delay(1);
     CDC_Transmit_FS(rx_value, 1);
 }
 
@@ -33,7 +32,7 @@ void echo_terminal(uint8_t *rx_value) {
  * Return: None
  *---------------------------------------------------------------------------*/
 void print_terminal(char *message) {
-    osDelay(1);
+    HAL_Delay(1);
     CDC_Transmit_FS((uint8_t*) message, strlen(message));
 }
 
@@ -117,7 +116,7 @@ void print_hex(uint8_t *data, uint16_t len, uint8_t data_width, uint32_t start_a
         }
         sprintf(buffer, "OK\t0x%08X: ", (unsigned int) address);
         print_terminal(buffer);
-        osDelay(2);
+        HAL_Delay(2);
         buffer_ptr = &buffer[0];
         memset(buffer, 0, sizeof(buffer));
         memset(ascii, 0, sizeof(ascii));
@@ -133,23 +132,23 @@ void print_hex(uint8_t *data, uint16_t len, uint8_t data_width, uint32_t start_a
             }
             sprintf(buffer_ptr, "%02X ", *ptr);
 //            print_terminal(hex);
-//            osDelay(2);
+//            HAL_Delay(2);
             ptr++;
             address++;
             buffer_ptr += 3;
         }
         print_terminal(buffer);
-        osDelay(2);
+        HAL_Delay(2);
         if (num_bytes_per_line < data_width) {
             for (uint8_t j = num_bytes_per_line; j < 16; j++) {
                 print_terminal("   ");
-                osDelay(2);
+                HAL_Delay(2);
             }
         }
         memset(buffer, 0, sizeof(buffer));
         sprintf(buffer, "    %s\r\n", ascii);
         print_terminal(buffer);
-        osDelay(2);
+        HAL_Delay(2);
     }
 }
 

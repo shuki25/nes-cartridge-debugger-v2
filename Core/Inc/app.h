@@ -43,20 +43,25 @@ typedef struct {
 	state_machine_t state_machine;
 	led_t status_led;
 	led_t nes_clk_led;
-	data_bus_config_t data_bus = { 0 };
+	data_bus_config_t data_bus;
 	cartridge_t cart;
-	uint8_t data_bus_position = 0;
-	uint8_t test_phase = 0;
-	uint8_t prev_test_phase = 0;
-	uint8_t detected_change = 0;
-	uint16_t rom_address = 0;
-	uint16_t ppu_address = 0;
-	uint8_t rom_dump_flag = 0;
-	uint32_t start_time = 0;
-	uint32_t end_time = 0;
-	uint32_t elapsed_time = 0;
-	uint32_t bytes_per_second = 0;
+	uint8_t data_bus_position;
+	uint8_t test_phase;
+	uint8_t prev_test_phase;
+	uint8_t detected_change;
+	uint16_t rom_address;
+	uint16_t ppu_address;
+	uint8_t rom_dump_flag;
+	uint32_t start_time;
+	uint32_t end_time;
+	uint32_t elapsed_time;
+	uint32_t bytes_per_second;
 	char *mapper_name;
 } app_t;
+
+// Function prototypes
+
+void app_init();
+void app_loop(app_t *app);
 
 #endif /* INC_APP_H_ */

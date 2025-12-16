@@ -14,6 +14,8 @@
 #include <string.h>
 #include "main.h"
 #include "debug.h"
+#include "ssd1306.h"
+#include "splash.h"
 
 extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim2;
@@ -32,14 +34,15 @@ void app_init(app_t *app) {
 	led_init_pwm(&app->nes_clk_led, &htim4, TIM_CHANNEL_3, &htim5); // Blue LED - NES Clock
 	led_init_pwm(&app->status_led, &htim4, TIM_CHANNEL_4, &htim5); // Green LED - Status
 	led_set_mode(&app->nes_clk_led, LED_BLINK_CONTINUOUS);
-	led_set_mode(&app->status_led, LED_STEADY);
+	led_set_mode(&app->status_led, LED_FADE_CONTINUOUS);
 	led_set_blink_delay(&app->nes_clk_led, 500, 500);
-	led_set_delay(&app->status_led, 1000);
-	led_set_pwm_max_duty(&app->nes_clk_led, 50); // 50% duty cycle
-	led_set_pwm_max_duty(&app->status_led, 50); // 50% duty cycle
+	led_set_blink_delay(&app->status_led, 2000, 2000);
+	led_set_pwm_max_duty(&app->nes_clk_led, 100); // 100% duty cycle
+	led_set_pwm_max_duty(&app->status_led, 45); // 45% duty cycle
 
 	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_3); // Blue LED - NES Clock
 	HAL_TIM_PWM_Start(&htim4, TIM_CHANNEL_4); // Green LED - Status
+	HAL_TIM_Base_Start(&htim5); // Activate Delay Timer
 
 	// Initialize Data Bus
 	data_bus_init(&app->data_bus);
@@ -77,6 +80,7 @@ void app_loop(app_t *app) {
 		ssd1306_SetCursor(36, 32);
 		ssd1306_WriteString("to Start", Font_7x10, White);
 		ssd1306_UpdateScreen();
+		app->state_machine.current_state = STATE_WAIT_FOR_COMMAND;
 
 	case STATE_SPLASH_SCREEN:
 		// Handle splash screen state

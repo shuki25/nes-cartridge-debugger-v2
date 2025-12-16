@@ -9,7 +9,6 @@
 #include <string.h>
 #include "splash_bitmap.h"
 #include "splash.h"
-#include "cmsis_os.h"
 #include "main.h"
 
 void splash(void) {
@@ -30,11 +29,11 @@ void splash(void) {
 	ssd1306_SetCursor(128 - (len * 7), 53);
 	ssd1306_WriteString((char*) buffer, Font_7x10, White);
 	ssd1306_UpdateScreen();
-	osDelay(2000);
+	HAL_Delay(2000);
 	ssd1306_Fill(Black);
 	ssd1306_DrawBitmap(0, 0, bitmap_splash, 128, 64, White);
 	ssd1306_UpdateScreen();
-	osDelay(2000);
+	HAL_Delay(2000);
 }
 
 void draw_home_screen(void) {
