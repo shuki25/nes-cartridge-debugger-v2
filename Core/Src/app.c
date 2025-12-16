@@ -16,10 +16,16 @@
 #include "debug.h"
 #include "ssd1306.h"
 #include "splash.h"
+#include "ui.h"
 
 extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim5;
+
+static uint8_t command_buffer[CMD_BUF_LEN + 1] = { 0 };
+static uint8_t cmd_buffer_idx = 0;
+static uint8_t command[32] = { 0 };
+static binary_download_t binary_download = { 0 };
 
 /**
  * @brief Initialize the main application structure
@@ -64,6 +70,27 @@ void app_init(app_t *app) {
  * @return None
  */
 void app_loop(app_t *app) {
+
+    uint8_t rx_value;
+    uint8_t has_command = 0;
+
+    // Listen for serial input for command or button presses to change state
+
+    while (ring_buffer_dequeue(&rx_buffer, &rx_value)) {
+        // Process received byte (rx_value)
+        if (rx_value == '\r') {
+            has_command = 1;
+            cmd_buffer_idx = 0;
+            break;
+        } else {
+            command_buffer[cmd_buffer_idx] = rx_value;
+            cmd_buffer_idx++;
+            if (cmd_buffer_idx > CMD_BUF_LEN) {
+                print_terminal("ERR\tCommand length exceeded\n\r");
+            }
+        }
+    }
+
 	switch (app->state_machine.current_state) {
 	case STATE_IDLE:
 		// Handle idle state

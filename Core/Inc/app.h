@@ -19,6 +19,8 @@
 #include "mapper.h"
 #include "cartridge.h"
 
+#define CMD_BUF_LEN (63)
+
 //@formatter:off
 typedef enum {
 	STATE_IDLE = 0,
@@ -58,6 +60,13 @@ typedef struct {
 	uint32_t bytes_per_second;
 	char *mapper_name;
 } app_t;
+
+typedef struct {
+    uint32_t start_address;
+    uint32_t end_address;
+    uint32_t next_address;
+    uint16_t block_size;
+} binary_download_t;
 
 // Function prototypes
 
