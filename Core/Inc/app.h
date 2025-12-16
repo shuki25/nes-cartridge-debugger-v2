@@ -1,0 +1,62 @@
+/*
+ * nes-cartridge-debugger-v2
+ * 
+ * Copyright (c) 2025 Dr. Joshua Butler
+ * All rights reserved.
+
+ * app.h
+ *
+ *  Created on: 15 Dec 2025
+ *      Author: josh
+ */
+
+#ifndef INC_APP_H_
+#define INC_APP_H_
+//
+#include <stdint.h>
+#include "led_indicator.h"
+#include "data_bus.h"
+#include "mapper.h"
+#include "cartridge.h"
+
+//@formatter:off
+typedef enum {
+	STATE_IDLE = 0,
+	STATE_ERROR,
+	STATE_INITIALIZE,
+	STATE_SPLASH_SCREEN,
+	STATE_TEST_OUTPUT_BUS,
+	STATE_TEST_INPUT_BUS,
+	STATE_READ_PRG_ROM,
+	STATE_READ_CHR_ROM,
+	STATE_PARSE_COMMAND,
+	STATE_WAIT_FOR_COMMAND,
+	STATE_EXECUTE_COMMAND
+} state_t;
+//@formatter:on
+
+typedef struct {
+	state_t current_state;
+} state_machine_t;
+
+typedef struct {
+	state_machine_t state_machine;
+	led_t status_led;
+	led_t nes_clk_led;
+	data_bus_config_t data_bus = { 0 };
+	cartridge_t cart;
+	uint8_t data_bus_position = 0;
+	uint8_t test_phase = 0;
+	uint8_t prev_test_phase = 0;
+	uint8_t detected_change = 0;
+	uint16_t rom_address = 0;
+	uint16_t ppu_address = 0;
+	uint8_t rom_dump_flag = 0;
+	uint32_t start_time = 0;
+	uint32_t end_time = 0;
+	uint32_t elapsed_time = 0;
+	uint32_t bytes_per_second = 0;
+	char *mapper_name;
+} app_t;
+
+#endif /* INC_APP_H_ */
