@@ -3,6 +3,13 @@
  *
  *  Created on: Nov 10, 2024
  *      Author: josh
+ *
+ *      Mapper module for NES cartridge debugger
+ *
+ *      This module handles the mapper configuration and bank switching
+ *
+ *      Most of the code is adapted from https://github.com/sanni/cartreader/blob/master/Cart_Reader/NES.ino
+ *
  */
 
 #include "mapper.h"
