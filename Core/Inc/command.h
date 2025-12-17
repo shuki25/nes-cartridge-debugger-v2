@@ -41,5 +41,14 @@ typedef enum {
 	CMD_UNKNOWN
 } command_status_t;
 
+// Function prototypes
+uint8_t num_parameters(char *parameters);
+void trim_whitespace(char *dst, const char *src);
+char* strtok_safe(char *str, const char *delim, char **saveptr);
+char* strtok_r(char *str, const char *delim, char **saveptr);
+command_t parse_command(uint8_t *command, uint8_t *token,
+		uint8_t *parameter, uint16_t token_len, uint16_t param_len);
+uint8_t parse_parameter(uint8_t *parameter, uint8_t *parsed_parameter,
+		uint8_t max_size, uint8_t index);
 
 #endif /* INC_COMMAND_H_ */

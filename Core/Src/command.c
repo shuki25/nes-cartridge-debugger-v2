@@ -69,7 +69,7 @@ uint8_t num_parameters(char *parameters) {
  * @param char *src: Source string
  * @return None
  */
-void trim_whitespace(char *dst, char *src) {
+void trim_whitespace(char *dst, const char *src) {
     uint8_t i = 0;
     uint8_t j = strlen(src);
     while (isspace((unsigned char )src[i])) {
@@ -130,7 +130,7 @@ char* strtok_safe(char *str, const char *delim, char **saveptr) {
  * @param uint8_t *parameter: Parameter to return
  * @return command_t: Command token
  */
-command_status_t parse_command(uint8_t *command, uint8_t *token, uint8_t *parameter, uint16_t token_len,
+command_t parse_command(uint8_t *command, uint8_t *token, uint8_t *parameter, uint16_t token_len,
         uint16_t param_len) {
 
     char tmp_parameter[64];
@@ -161,7 +161,7 @@ command_status_t parse_command(uint8_t *command, uint8_t *token, uint8_t *parame
         }
     }
 
-    return CMD_UNKNOWN;
+    return INVALID_COMMAND;
 }
 
 /**
