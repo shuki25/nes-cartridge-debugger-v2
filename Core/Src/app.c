@@ -17,15 +17,20 @@
 #include "ssd1306.h"
 #include "splash.h"
 #include "ui.h"
+#include "command.h"
+#include "ring_buffer.h"
+#include "tasks.h"
 
 extern TIM_HandleTypeDef htim4;
 extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim5;
+extern ring_buffer_t rx_buffer;
 
 static uint8_t command_buffer[CMD_BUF_LEN + 1] = { 0 };
 static uint8_t cmd_buffer_idx = 0;
-static uint8_t command[32] = { 0 };
-static binary_download_t binary_download = { 0 };
+static uint8_t command[CMD_LEN + 1] = { 0 };
+static uint8_t parameter[PARAM_LEN + 1] = { 0 };
+//static binary_download_t binary_download = { 0 };
 
 /**
  * @brief Initialize the main application structure
@@ -39,7 +44,7 @@ void app_init(app_t *app) {
 	// Initialize LEDs
 	led_init_pwm(&app->nes_clk_led, &htim4, TIM_CHANNEL_3, &htim5); // Blue LED - NES Clock
 	led_init_pwm(&app->status_led, &htim4, TIM_CHANNEL_4, &htim5); // Green LED - Status
-	led_set_mode(&app->nes_clk_led, LED_BLINK_CONTINUOUS);
+	led_set_mode(&app->nes_clk_led, LED_N_BLINK);
 	led_set_mode(&app->status_led, LED_FADE_CONTINUOUS);
 	led_set_blink_delay(&app->nes_clk_led, 500, 500);
 	led_set_blink_delay(&app->status_led, 2000, 2000);
@@ -71,26 +76,11 @@ void app_init(app_t *app) {
  */
 void app_loop(app_t *app) {
 
-    uint8_t rx_value;
-    uint8_t has_command = 0;
+	uint8_t rx_value;
+//	uint8_t output_buffer[TX_BUF_LEN + 1] = { 0 };
+	command_t cmd_token;
 
-    // Listen for serial input for command or button presses to change state
-
-    while (ring_buffer_dequeue(&rx_buffer, &rx_value)) {
-        // Process received byte (rx_value)
-        if (rx_value == '\r') {
-            has_command = 1;
-            cmd_buffer_idx = 0;
-            break;
-        } else {
-            command_buffer[cmd_buffer_idx] = rx_value;
-            cmd_buffer_idx++;
-            if (cmd_buffer_idx > CMD_BUF_LEN) {
-                print_terminal("ERR\tCommand length exceeded\n\r");
-            }
-        }
-    }
-
+	// State machine handling
 	switch (app->state_machine.current_state) {
 	case STATE_IDLE:
 		// Handle idle state
@@ -125,16 +115,59 @@ void app_loop(app_t *app) {
 		break;
 	case STATE_PARSE_COMMAND:
 		// Handle parse command state
+		memset(command, 0, sizeof(command));
+		memset(parameter, 0, sizeof(parameter));
+		cmd_token = parse_command(command_buffer, command, parameter, CMD_LEN,
+		PARAM_LEN);
+		if (cmd_token == INVALID_COMMAND) {
+			print_terminal("ERR\tInvalid command\n");
+			PRINT_FMT_DEBUG("Invalid command: %s\n", command_buffer);
+			// Clear command buffer for next command
+			memset(command_buffer, 0, sizeof(command_buffer));
+			app->state_machine.current_state = STATE_WAIT_FOR_COMMAND;
+			break;
+		} else if (cmd_token == INVALID_PARAMETER_COUNT) {
+			print_terminal("ERR\tInvalid parameter count\n");
+			PRINT_FMT_DEBUG("Invalid parameter count for command: %s\n", command);
+			// Clear command buffer for next command
+			memset(command_buffer, 0, sizeof(command_buffer));
+			app->state_machine.current_state = STATE_WAIT_FOR_COMMAND;
+			break;
+		}
+		app->parsed_command = cmd_token;
+		strncpy((char*) app->parameter, (char*) parameter, PARAM_LEN);
+
+		PRINT_FMT_DEBUG("Command: %s ID: %d\n", command, cmd_token);
+
+		// Clear command buffer for next command
+		memset(command_buffer, 0, sizeof(command_buffer));
+		app->state_machine.current_state = STATE_EXECUTE_COMMAND;
 		break;
 	case STATE_WAIT_FOR_COMMAND:
 		// Handle wait for command state
 		// TODO: Check for button press to transition to execute command state
 
-		// TODO: Check for command input (e.g., from UART or other interface)
+		// Listen for serial input for command or button presses to change state
+
+		while (ring_buffer_dequeue(&rx_buffer, &rx_value)) {
+			// Process received byte (rx_value)
+			if (rx_value == '\r') {
+				app->state_machine.current_state = STATE_PARSE_COMMAND;
+				cmd_buffer_idx = 0;
+				break;
+			} else {
+				command_buffer[cmd_buffer_idx] = rx_value;
+				cmd_buffer_idx++;
+				if (cmd_buffer_idx > CMD_BUF_LEN) {
+					print_terminal("ERR\tCommand length exceeded\n");
+				}
+			}
+		}
 
 		break;
 	case STATE_EXECUTE_COMMAND:
 		// Handle execute command state
+		task_execute_command(app);
 		break;
 	default:
 		break;

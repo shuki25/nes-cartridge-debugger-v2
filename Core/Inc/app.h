@@ -18,8 +18,12 @@
 #include "data_bus.h"
 #include "mapper.h"
 #include "cartridge.h"
+#include "command.h"
 
 #define CMD_BUF_LEN (63)
+#define CMD_LEN (31)
+#define PARAM_LEN (31)
+#define TX_BUF_LEN (127)
 
 //@formatter:off
 typedef enum {
@@ -59,6 +63,8 @@ typedef struct {
 	uint32_t elapsed_time;
 	uint32_t bytes_per_second;
 	char *mapper_name;
+	command_t parsed_command;
+	char parameter[PARAM_LEN + 1];
 } app_t;
 
 typedef struct {
