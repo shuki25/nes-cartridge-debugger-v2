@@ -18,13 +18,15 @@
 
 // mapper_id, prg_low, prg_high, chr_low, chr_high, ram_low, ram_high
 
-static const mapper_t mapper_NES[] = {
+const mapper_t mapper_NES[] = {
     { 0, 0, 0, 0, 0, 0, 0 }, // NROM
     { 1, 1, 5, 0, 5, 0, 3 }, // MMC1
+    { 2, 3, 3, 0, 0, 0, 0 }, // UxROM
+    { 3, 0, 0, 1, 1, 0, 0 }, // CNROM
     { 4, 1, 5, 0, 6, 0, 1 } // MMC3
 };
 
-uint8_t mapper_count = sizeof(mapper_NES) / sizeof(mapper_t);
+const uint8_t mapper_count = sizeof(mapper_NES) / sizeof(mapper_t);
 
 static char *mapper_name[] = {
     "NROM\0", "MMC1\0", "UxROM\0", "CNROM\0", "MMC3\0"

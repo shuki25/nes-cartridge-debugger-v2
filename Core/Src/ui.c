@@ -37,6 +37,20 @@ void print_terminal(char *message) {
 }
 
 /*-----------------------------------------------------------------------------
+ * Function: print_raw_data
+ *
+ * This function will print raw data to the terminal. Other modes will ignore.
+ *
+ * Parameters: uint8_t *data - pointer to the data
+ *             uint16_t len - length of the data
+ * Return: None
+ *---------------------------------------------------------------------------*/
+void print_raw_data(uint8_t *data, uint16_t len) {
+    HAL_Delay(1);
+    CDC_Transmit_FS(data, len);
+}
+
+/*-----------------------------------------------------------------------------
  * Function: print_divider
  *
  * This function will print a divider to the terminal.
@@ -63,8 +77,8 @@ void print_divider(uint8_t length) {
  *---------------------------------------------------------------------------*/
 void print_help() {
     print_divider(80);
-    print_terminal("read_prg_rom <addr>: Read ROM data from PRG\n");
-    print_terminal("read_chr_rom <addr>: Read ROM data from CHR\n");
+    print_terminal("read_prg_rom <addr> <num_blocks>: Read ROM data from PRG\n");
+    print_terminal("read_chr_rom <addr> <num_blocks>: Read ROM data from CHR\n");
     print_terminal("test_output_bus: Test the output data bus\n");
     print_terminal("test_input_bus: Test the input data bus\n");
     print_terminal("set_mapper <id>: Set the mapper ID\n");

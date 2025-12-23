@@ -64,7 +64,7 @@ typedef struct {
 	uint32_t bytes_per_second;
 	char *mapper_name;
 	command_t parsed_command;
-	char parameter[PARAM_LEN + 1];
+	uint8_t parameter[PARAM_LEN + 1];
 } app_t;
 
 typedef struct {

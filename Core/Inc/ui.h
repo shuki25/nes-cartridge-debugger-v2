@@ -15,6 +15,7 @@
 
 void echo_terminal(uint8_t *rx_value);
 void print_terminal(char *message);
+void print_raw_data(uint8_t *data, uint16_t len);
 void print_divider(uint8_t length);
 void print_help();
 void print_hex(uint8_t *data, uint16_t len, uint8_t data_width, uint32_t start_addr);
