@@ -23,13 +23,14 @@ const mapper_t mapper_NES[] = {
     { 1, 1, 5, 0, 5, 0, 3 }, // MMC1
     { 2, 3, 3, 0, 0, 0, 0 }, // UxROM
     { 3, 0, 0, 1, 1, 0, 0 }, // CNROM
-    { 4, 1, 5, 0, 6, 0, 1 } // MMC3
+    { 4, 1, 5, 0, 6, 0, 1 }, // MMC3
+    { 5, 1, 6, 0, 7, 0, 1 }, // MMC5
 };
 
 const uint8_t mapper_count = sizeof(mapper_NES) / sizeof(mapper_t);
 
 static char *mapper_name[] = {
-    "NROM\0", "MMC1\0", "UxROM\0", "CNROM\0", "MMC3\0"
+    "NROM\0", "MMC1\0", "UxROM\0", "CNROM\0", "MMC3\0", "MMC5\0"
 };
 
 static const uint16_t prog_ROM_size[] = {
@@ -196,10 +197,65 @@ mapper_status_t mapper_switch_prg_bank(mapper_t *mapper, data_bus_config_t *data
         if (bank > bank_max) {
             return MAPPER_INVALID_BANK;
         }
-        // TO DO: Implement bank switching with data bus
+        // Reset MMC1 shift register
+        data_bus_write_prg(data_bus, 0x8000, 0x80);
+        // Switch to 16K bank (0x8000-0xBFFF) + Fixed to last bank (0xC000-0xFFFF)
+        mapper_write_mmc1_byte(data_bus, 0x8000, 0x0C);
+        // Set to requested bank
+        mapper_write_mmc1_byte(data_bus, 0xE000, bank);
         return MAPPER_OK;
         break;
+    case 2: // UxROM
+        bank_size = 16;
+        bank_max = prg_size / bank_size;
 
+        if (bank > bank_max) {
+            return MAPPER_INVALID_BANK;
+        }
+
+        // Check if bank is valid by reading nth byte from the bank
+        if (data_bus_read_prg(data_bus, 0xC000 + bank) == bank) {
+            data_bus_write_prg(data_bus, 0xC000 + bank, bank);
+            return MAPPER_OK;
+        } else {
+            return MAPPER_INVALID_BANK;
+        }
+        break;
+    case 4: // MMC3
+        bank_size = 8;
+        bank_max = prg_size / bank_size;
+
+        if (bank > bank_max) {
+            return MAPPER_INVALID_BANK;
+        }
+
+        // PRG Bank (0x8000-0x9FFF swappable, 0xC000-0xFFFF fixed to second last)
+        data_bus_write_prg(data_bus, 0x8000, 0x06);
+
+        // Set to requested bank
+        data_bus_write_prg(data_bus, 0x8001, bank);
+
+        return MAPPER_OK;
+        break;
+    case 5: // MMC5
+        bank_size = 8;
+        bank_max = prg_size / bank_size;
+
+        if (bank > bank_max) {
+            return MAPPER_INVALID_BANK;
+        }
+
+        // Configure MMC5 for 16K bank switching
+        data_bus_write_prg(data_bus, 0x5100, 3); // Set PRG mode to Four 8K banks
+        // Set to requested bank
+        data_bus_write_prg(data_bus, 0x5114, bank | 0x80); // Set first bank (0x8000-0xBFFF)
+        data_bus_write_prg(data_bus, 0x5115, (bank + 1) | 0x80); // Set second bank (0xC000-0xFFFF)
+
+        return MAPPER_OK;
+        break;
+    default:
+        return MAPPER_NOT_FOUND;
+        break;
     }
 
     return MAPPER_ERROR;
