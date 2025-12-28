@@ -108,11 +108,38 @@ void task_execute_command(app_t *app) {
         num_blocks = (uint16_t) atoi((char*) parameter_buffer);
         cmd_status = task_read_prg_rom(app, start_address, num_blocks);
         break;
+    case CMD_SET_MAPPER:
+        parse_parameter(app->parameter, parameter_buffer, PARAM_LEN, 0);
+        mapper_status_t mapper_status;
+        uint8_t mapper_id = (uint8_t) atoi((char*) parameter_buffer);
+        mapper_status = mapper_init(&app->cart.mapper, mapper_id);
+        if (mapper_status == MAPPER_OK) {
+            snprintf(output_buffer, sizeof(output_buffer), "OK\tMapper set to ID: %d\tName: %s\n", mapper_id,
+                    mapper_get_name(mapper_id));
+            print_terminal(output_buffer);
+        } else if (mapper_status == MAPPER_NOT_FOUND) {
+            snprintf(output_buffer, sizeof(output_buffer), "ERR\tMapper ID: %d not found\n", mapper_id);
+            print_terminal(output_buffer);
+        }
+        break;
     case CMD_GET_MAPPER:
         task_get_mapper_name(app);
         break;
     case CMD_GET_AVAIL_MAPPERS:
         task_list_available_mappers();
+        break;
+    case CMD_SWITCH_PRG_BANK:
+        parse_parameter(app->parameter, parameter_buffer, PARAM_LEN, 0);
+        cartridge_status_t cartridge_status;
+        uint8_t bank = (uint8_t) atoi((char*) parameter_buffer);
+        cartridge_status = cartridge_switch_prg_bank(&app->cart, bank);
+        if (cartridge_status == CART_OK) {
+            snprintf(output_buffer, sizeof(output_buffer), "OK\tSwitched to PRG bank: %d\n", bank);
+            print_terminal(output_buffer);
+        } else {
+            snprintf(output_buffer, sizeof(output_buffer), "ERR\tFailed to switch to PRG bank: %d\n", bank);
+            print_terminal(output_buffer);
+        }
         break;
     default:
         PRINT_FMT_DEBUG("Unknown command ID: %d\r\n", app->parsed_command);
