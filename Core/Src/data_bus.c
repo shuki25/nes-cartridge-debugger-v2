@@ -10,6 +10,8 @@
 #include "sr_74hc595.h"
 #include "ui.h"
 #include "main.h"
+#include "debug.h"
+
 
 extern TIM_HandleTypeDef htim2;
 
@@ -265,14 +267,53 @@ void data_bus_set_gpio_write(GPIO_TypeDef *port, uint16_t pin) {
  * Return: None
  *---------------------------------------------------------------------------*/
 void data_bus_set_prg_data_mode(data_bus_config_t *config, uint8_t mode) {
+
+    uint32_t reg_a = GPIOA->MODER;
+    uint32_t reg_c = GPIOC->MODER;
+    uint32_t type_a = GPIOA->OTYPER;
+    uint32_t type_c = GPIOC->OTYPER;
+    uint32_t pull_a = GPIOA->PUPDR;
+    uint32_t pull_c = GPIOC->PUPDR;
+
+    pull_a &= ~0x0000FFFF; // Clear PA0-PA4 (no pull)
+    pull_c &= ~0x0000000F; // Clear PC0-PC2 (no pull)
+    GPIOA->PUPDR = pull_a;
+    GPIOC->PUPDR = pull_c;
+
     if (mode == 0) { // Configure Data bus for read mode
-        for (uint8_t i = 0; i < 8; i++) {
-            data_bus_set_gpio_read(prg_data_ports[i], prg_data_pins[i]);
-        }
+        // Bare Metal GPIO Speed Optimization
+        reg_a &= ~0x000003FF; // Set PA0-PA4 to input (00)
+        reg_c &= ~0x0000003F; // Set PC0-PC2 to input (00)
+        GPIOA->MODER = reg_a;
+        GPIOC->MODER = reg_c;
+
+        type_a &= ~0x0000001F; // Set PA0-PA4 to push-pull
+        type_c &= ~0x00000007; // Set PC0-PC2 to push-pull
+        GPIOA->OTYPER = type_a;
+        GPIOC->OTYPER = type_c;
+
+//        for (uint8_t i = 0; i < 8; i++) {
+//            data_bus_set_gpio_read(prg_data_ports[i], prg_data_pins[i]);
+//        }
     } else {
-        for (uint8_t i = 0; i < 8; i++) {
-            data_bus_set_gpio_write(prg_data_ports[i], prg_data_pins[i]);
-        }
+        // Bare Metal GPIO Speed Optimization
+        reg_a &= ~0x000003FF; // Clear PA0-PA4
+        reg_a |= 0x00000155;  // Set PA0-PA4 to output (01)
+        GPIOA->MODER = reg_a;
+
+        reg_c &= ~0x0000003F; // Clear PC0-PC2
+        reg_c |= 0x00000015;  // Set PC0-PC2 to output (01)
+        GPIOC->MODER = reg_c;
+
+        type_a &= ~0x0000001F; // Set PA0-PA4 to push-pull
+        type_c &= ~0x00000007; // Set PC0-PC2 to push-pull
+        GPIOA->OTYPER = type_a;
+        GPIOC->OTYPER = type_c;
+
+
+//        for (uint8_t i = 0; i < 8; i++) {
+//            data_bus_set_gpio_write(prg_data_ports[i], prg_data_pins[i]);
+//        }
     }
 }
 
@@ -307,10 +348,27 @@ void data_bus_set_chr_data_mode(data_bus_config_t *config, uint8_t mode) {
  * Return: None
  *---------------------------------------------------------------------------*/
 void data_bus_write_prg_data(data_bus_config_t *config, uint8_t data) {
-    for (uint8_t i = 0; i < 8; i++) {
-        HAL_GPIO_WritePin(prg_data_ports[i], prg_data_pins[i],
-                (data & (1 << i)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
-    }
+
+    uint32_t reg_a = 0;
+    uint32_t reg_c = 0;
+    reg_a = GPIOA->ODR;
+    reg_c = GPIOC->ODR;
+
+    // Clear relevant bits
+    reg_a &= ~0x001F; // Clear PA0-PA4
+    reg_c &= ~0x0007; // Clear PC0-PC2
+
+    // Set new data bits
+    reg_a |= (reverse_bits5[data & 0x1F]); // Set PA0-PA4
+    reg_c |= (reverse_bits3[(data >> 5) & 0x07]); // Set PC0-PC2
+
+    GPIOA->ODR = reg_a;
+    GPIOC->ODR = reg_c;
+
+//    for (uint8_t i = 0; i < 8; i++) {
+//        HAL_GPIO_WritePin(prg_data_ports[i], prg_data_pins[i],
+//                (data & (1 << i)) ? GPIO_PIN_SET : GPIO_PIN_RESET);
+//    }
 }
 
 /*-----------------------------------------------------------------------------
@@ -582,6 +640,7 @@ void data_bus_write_prg(data_bus_config_t *config, uint16_t address, uint8_t dat
     data_bus_write_prg_data(config, data); // Write data to the bus
 
     data_bus_set_prg_address(config, address); // Set CPU address
+//    _delay_us(1); // Delay to stabilize address and for ROM to respond)
     data_bus_m2(config, DATA_BUS_CLOCK_HIGH); // Set M2 high to stabilize
     data_bus_set_romsel(config, address); // Set ROMSEL low to enable ROM
     _delay_us(1); // Delay to stabilize address and for ROM to respond
@@ -595,6 +654,18 @@ void data_bus_write_prg(data_bus_config_t *config, uint16_t address, uint8_t dat
     data_bus_set_prg_address(config, 0); // Clear PRG address
 
     data_bus_m2(config, DATA_BUS_CLOCK_HIGH); // Set M2 high to stabilize
+
+//    data_bus_write_prg_data(config, data); // Write data to the bus
+//    data_bus_set_prg_address(config, address); // Set CPU address
+//    data_bus_set_prg_data_mode(config, CART_WRITE_MODE);
+//    data_bus_romsel(config, DATA_BUS_ROMSEL_ACTIVE); // Set ROMSEL low to enable ROM
+//    data_bus_m2(config, DATA_BUS_CLOCK_HIGH); // Set M2 high to stabilize)
+//    data_bus_set_prg_rw(config, CART_WRITE_MODE); // Set CPU_RW low to write data
+//    _delay_us(1); // Delay to stabilize address and for ROM to respond
+//    data_bus_m2(config, DATA_BUS_CLOCK_LOW); // Set M2 low to write data
+//    data_bus_set_prg_rw(config, CART_READ_MODE); // Set CPU_RW high to read data
+//    data_bus_set_prg_data_mode(config, CART_READ_MODE);
+//    data_bus_romsel(config, DATA_BUS_ROMSEL_INACTIVE); // Set ROMSEL high to disable ROM
 }
 
 /*-----------------------------------------------------------------------------
@@ -623,11 +694,16 @@ void data_bus_write_reg(data_bus_config_t *config, uint16_t address, uint8_t dat
     // If time is greater than 33 ns then write to RAM will be corrupted
     // Bare Metal
 
-    GPIOC->ODR &= ~(1 << 4); // Set ROMSEL low
-    GPIOB->ODR |= (1 << 0); // Set M2 high
+    uint32_t gpioc_odr = GPIOC->ODR & ~(1 << 4);
+    uint32_t gpiob_odr = GPIOB->ODR | (1 << 0);
+    uint32_t gpioc_set = GPIOC->ODR | (1 << 4);
+    uint32_t gpiob_reset = GPIOB->ODR & ~(1 << 0);
 
-    GPIOC->ODR |= (1 << 4); // Set ROMSEL high
-    GPIOB->ODR &= ~(1 << 0); // Set M2 low
+    GPIOC->ODR = gpioc_odr; // Set ROMSEL low
+    GPIOB->ODR = gpiob_odr; // Set M2 high
+
+    GPIOC->ODR = gpioc_set; // Set ROMSEL high
+    GPIOB->ODR = gpiob_reset; // Set M2 low
 
     _delay_us(1); // Delay to stabilize address and for ROM to respond
 
