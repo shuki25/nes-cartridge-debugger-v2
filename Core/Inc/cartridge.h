@@ -31,5 +31,7 @@ typedef struct {
 } cartridge_t;
 
 cartridge_status_t cartridge_init(cartridge_t *cart, uint8_t mapper_id, uint16_t prg_size, uint16_t chr_size, uint16_t ram_size);
+cartridge_status_t cartridge_switch_prg_bank(cartridge_t *cart, uint8_t bank);
+cartridge_status_t cartridge_switch_chr_bank(cartridge_t *cart, uint8_t bank);
 
 #endif /* INC_CARTRIDGE_H_ */
